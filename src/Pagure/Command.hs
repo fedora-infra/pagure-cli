@@ -10,13 +10,14 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Version (showVersion)
 import Options.Applicative
-import Web.Pagure
+import Web.Pagure hiding (User)
 
 -- | Every command has a constructor in this type. It can have an optional field
 -- which should contain the command-line options specific to that command.
 data Command =
     GitTags GitTagsOptions
   | Tags TagsOptions
+  | User UserOptions
   | Users UsersOptions
   | Version
   deriving (Eq, Ord, Show)
@@ -27,6 +28,7 @@ options :: Parser GlobalOptions
 options = subparser $
           gitTagsCommand
        <> tagsCommand
+       <> userCommand
        <> usersCommand
        <> versionCommand
 
@@ -39,6 +41,7 @@ runPagureCli g@(GlobalOptions cmd verbose) =
   case cmd of
     GitTags opts -> gitTagsCommandRunner opts
     Tags opts    -> tagsCommandRunner opts
+    User opts    -> userCommandRunner opts
     Users opts   -> usersCommandRunner opts
     Version      -> versionCommandRunner
 
@@ -119,6 +122,32 @@ tagsCommandRunner (TagsOptions repo pattern) = do
 
 
 --------------------------------------------------------------------------------
+-- Command: user
+--------------------------------------------------------------------------------
+
+data UserOptions =
+  UserOptions { userOptionsUsername :: String } deriving (Eq, Ord, Show)
+
+userCommandParser :: Parser Command
+userCommandParser = User <$> (UserOptions <$> argument str (
+                                                metavar "USERNAME"
+                                             <> help "The username to look up"))
+
+userCommand :: Mod CommandFields GlobalOptions
+userCommand =
+  command "user" (info (helper <*> globalOptions userCommandParser) $
+                   fullDesc
+                   <>  progDesc "Show information about a pagure user")
+
+userCommandRunner :: UserOptions -> IO ()
+userCommandRunner (UserOptions username) = do
+  let pc = PagureConfig "https://pagure.io" Nothing
+  pagureUser <- runPagureT (user (T.pack username)) pc
+  -- TODO: This output is very ugly
+  putStrLn (show pagureUser)
+
+
+--------------------------------------------------------------------------------
 -- Command: users
 --------------------------------------------------------------------------------
 
@@ -141,8 +170,8 @@ usersCommand =
 usersCommandRunner :: UsersOptions -> IO ()
 usersCommandRunner (UsersOptions pattern) = do
   let pc = PagureConfig "https://pagure.io" Nothing
-  pagureTags <- runPagureT (users (fmap T.pack pattern)) pc
-  mapM_ T.putStrLn pagureTags
+  pagureUsers <- runPagureT (users (fmap T.pack pattern)) pc
+  mapM_ T.putStrLn pagureUsers
 
 
 --------------------------------------------------------------------------------

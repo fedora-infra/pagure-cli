@@ -3,7 +3,7 @@ packages:
 - '.'
 - location:
     git:  https://pagure.io/pagure-haskell.git 
-    commit: 9605b2e
+    commit: 718ec10
   extra-dep: true
 extra-deps: []
 resolver: nightly-2015-06-17

@@ -6,6 +6,7 @@ import qualified Paths_pagure_cli as Paths
 import Control.Lens hiding (argument)
 import Data.Aeson.Lens
 import Data.Maybe (fromMaybe)
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Version (showVersion)
 import Options.Applicative
@@ -58,12 +59,18 @@ globalOptions cmd = GlobalOptions
 --------------------------------------------------------------------------------
 
 data TagsOptions =
-  TagsOptions { tagsOptionsRepo :: String } deriving (Eq, Ord, Show)
+  TagsOptions { tagsOptionsRepo :: String
+              , tagsOptionsPattern :: Maybe String } deriving (Eq, Ord, Show)
 
 tagsCommandParser :: Parser Command
 tagsCommandParser = Tags <$> (TagsOptions <$> argument str (
-                                  metavar "REPOSITORY"
-                                  <> help "Repository to query for tags"))
+                                                metavar "REPOSITORY"
+                                             <> help "Repository to query for tags")
+                                          <*> optional (strOption (
+                                                long "pattern"
+                                             <> short 'p'
+                                             <> metavar "PATTERN"
+                                             <> help "An optional beginning pattern to filter by" )))
 
 tagsCommand :: Mod CommandFields GlobalOptions
 tagsCommand =
@@ -72,9 +79,9 @@ tagsCommand =
                   <>  progDesc "Displays the tags for the given repository" )
 
 tagsCommandRunner :: TagsOptions -> IO ()
-tagsCommandRunner (TagsOptions repo) = do
+tagsCommandRunner (TagsOptions repo pattern) = do
   let pc = PagureConfig "https://pagure.io" Nothing
-  pagureTags <- runPagureT (tags repo) pc
+  pagureTags <- runPagureT (tags repo (fmap T.pack pattern)) pc
   mapM_ T.putStrLn pagureTags
 
 

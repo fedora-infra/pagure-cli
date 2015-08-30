@@ -10,4 +10,15 @@ https://github.com/commercialhaskell/stack/wiki/Downloads#fedora
 
 ## Usage
 
+See `pagure --help` for the list of available commands. Use
+`pagure <command> --help` to get command-specific help.
 
+Some existing commands are:
+
+* `pagure version` - show the current pagure-cli and pagure API versions
+* `pagure tags <repository>` - show tags of the given repository
+
+## License
+
+`pagure-cli` is released under a BSD-2 license. See `LICENSE` for terms and
+details.

@@ -1,0 +1,9 @@
+flags: {}
+packages:
+- '.'
+- location:
+    git:  https://pagure.io/pagure-haskell.git 
+    commit: 9605b2e
+  extra-dep: true
+extra-deps: []
+resolver: nightly-2015-06-17

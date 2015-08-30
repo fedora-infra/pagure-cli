@@ -1,0 +1,30 @@
+name:                pagure-cli
+version:             0.1.0.0
+synopsis:            Command-line interface to pagure.io
+-- description:
+homepage:            https://github.com/fedora-infra/pagure-cli
+license:             BSD2
+license-file:        LICENSE
+author:              Ricky Elrod
+maintainer:          relrod@redhat.com
+copyright:           (c) 2015 Red Hat, Inc.
+category:            Web
+build-type:          Simple
+-- extra-source-files:
+cabal-version:       >= 1.10
+
+executable pagure
+  main-is:             Main.hs
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base >= 4 && < 5
+                     , aeson >= 0.7 && < 1
+                     , bytestring >= 0.9 && < 1
+                     , lens >= 4 && < 5
+                     , lens-aeson >= 1 && < 2
+                     , text >= 1 && < 2
+                     , pagure
+                     , optparse-applicative >= 0.8 && < 1
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall -threaded -O2

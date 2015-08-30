@@ -17,6 +17,7 @@ import Web.Pagure
 data Command =
     GitTags GitTagsOptions
   | Tags TagsOptions
+  | Users UsersOptions
   | Version
   deriving (Eq, Ord, Show)
 
@@ -26,6 +27,7 @@ options :: Parser GlobalOptions
 options = subparser $
           gitTagsCommand
        <> tagsCommand
+       <> usersCommand
        <> versionCommand
 
 
@@ -37,6 +39,7 @@ runPagureCli g@(GlobalOptions cmd verbose) =
   case cmd of
     GitTags opts -> gitTagsCommandRunner opts
     Tags opts    -> tagsCommandRunner opts
+    Users opts   -> usersCommandRunner opts
     Version      -> versionCommandRunner
 
 
@@ -54,8 +57,8 @@ data GlobalOptions =
 globalOptions :: Parser Command -> Parser GlobalOptions
 globalOptions cmd = GlobalOptions
                     <$> cmd
-                    <*> switch ( long "verbose"
-                                 <> help "Output debugging information" )
+                    <*> switch (long "verbose"
+                             <> help "Output debugging information")
 
 
 --------------------------------------------------------------------------------
@@ -74,7 +77,7 @@ gitTagsCommand :: Mod CommandFields GlobalOptions
 gitTagsCommand =
   command "git-tags" (info (helper <*> globalOptions gitTagsCommandParser) $
                       fullDesc
-                      <>  progDesc "Displays the git tags for the given repository" )
+                      <> progDesc "Displays the git tags for the given repository")
 
 gitTagsCommandRunner :: GitTagsOptions -> IO ()
 gitTagsCommandRunner (GitTagsOptions repo) = do
@@ -100,18 +103,45 @@ tagsCommandParser = Tags <$> (TagsOptions <$> argument str (
                                                 long "pattern"
                                              <> short 'p'
                                              <> metavar "PATTERN"
-                                             <> help "An optional beginning pattern to filter by" )))
+                                             <> help "An optional beginning pattern to filter by")))
 
 tagsCommand :: Mod CommandFields GlobalOptions
 tagsCommand =
   command "tags" (info (helper <*> globalOptions tagsCommandParser) $
                   fullDesc
-                  <>  progDesc "Displays the tags for the given repository" )
+                  <>  progDesc "Displays the tags for the given repository")
 
 tagsCommandRunner :: TagsOptions -> IO ()
 tagsCommandRunner (TagsOptions repo pattern) = do
   let pc = PagureConfig "https://pagure.io" Nothing
   pagureTags <- runPagureT (tags repo (fmap T.pack pattern)) pc
+  mapM_ T.putStrLn pagureTags
+
+
+--------------------------------------------------------------------------------
+-- Command: users
+--------------------------------------------------------------------------------
+
+data UsersOptions =
+  UsersOptions { usersOptionsPattern :: Maybe String } deriving (Eq, Ord, Show)
+
+usersCommandParser :: Parser Command
+usersCommandParser = Users <$> (UsersOptions <$> optional (strOption (
+                                                   long "pattern"
+                                                <> short 'p'
+                                                <> metavar "PATTERN"
+                                                <> help "An optional beginning pattern to filter by")))
+
+usersCommand :: Mod CommandFields GlobalOptions
+usersCommand =
+  command "users" (info (helper <*> globalOptions usersCommandParser) $
+                   fullDesc
+                   <>  progDesc "Retieve a list of pagure users")
+
+usersCommandRunner :: UsersOptions -> IO ()
+usersCommandRunner (UsersOptions pattern) = do
+  let pc = PagureConfig "https://pagure.io" Nothing
+  pagureTags <- runPagureT (users (fmap T.pack pattern)) pc
   mapM_ T.putStrLn pagureTags
 
 
@@ -126,7 +156,7 @@ versionCommand :: Mod CommandFields GlobalOptions
 versionCommand =
   command "version" (info (helper <*> globalOptions versionCommandParser) $
                      fullDesc
-                     <>  progDesc "Displays the version of pagure-cli and the pagure.io API" )
+                     <>  progDesc "Displays the version of pagure-cli and the pagure.io API")
 
 versionCommandRunner :: IO ()
 versionCommandRunner = do

@@ -15,16 +15,19 @@ import Web.Pagure
 -- | Every command has a constructor in this type. It can have an optional field
 -- which should contain the command-line options specific to that command.
 data Command =
-    Version
+    GitTags GitTagsOptions
   | Tags TagsOptions
+  | Version
   deriving (Eq, Ord, Show)
 
 -- | Every command should also have its relevant @command@ (defined below)
 -- referenced here.
 options :: Parser GlobalOptions
 options = subparser $
-          versionCommand
+          gitTagsCommand
        <> tagsCommand
+       <> versionCommand
+
 
 -- | Every command should also have a relevant function that actually does what
 -- the command intends to do. That function should be referenced here. This
@@ -32,8 +35,9 @@ options = subparser $
 runPagureCli :: GlobalOptions -> IO ()
 runPagureCli g@(GlobalOptions cmd verbose) =
   case cmd of
-    Version -> versionCommandRunner
-    Tags opts -> tagsCommandRunner opts
+    GitTags opts -> gitTagsCommandRunner opts
+    Tags opts    -> tagsCommandRunner opts
+    Version      -> versionCommandRunner
 
 
 --------------------------------------------------------------------------------
@@ -52,6 +56,32 @@ globalOptions cmd = GlobalOptions
                     <$> cmd
                     <*> switch ( long "verbose"
                                  <> help "Output debugging information" )
+
+
+--------------------------------------------------------------------------------
+-- Command: git-tags
+--------------------------------------------------------------------------------
+
+data GitTagsOptions =
+  GitTagsOptions { gitTagsOptionsRepo :: String } deriving (Eq, Ord, Show)
+
+gitTagsCommandParser :: Parser Command
+gitTagsCommandParser = GitTags <$> (GitTagsOptions <$> argument str (
+                                                         metavar "REPOSITORY"
+                                                      <> help "Repository to query for tags"))
+
+gitTagsCommand :: Mod CommandFields GlobalOptions
+gitTagsCommand =
+  command "git-tags" (info (helper <*> globalOptions gitTagsCommandParser) $
+                      fullDesc
+                      <>  progDesc "Displays the git tags for the given repository" )
+
+gitTagsCommandRunner :: GitTagsOptions -> IO ()
+gitTagsCommandRunner (GitTagsOptions repo) = do
+  -- TODO: Handle PagureConfig coming from CLI args and/or config file
+  let pc = PagureConfig "https://pagure.io" Nothing
+  gitTagsResp <- runPagureT (gitTags repo) pc
+  mapM_ T.putStrLn gitTagsResp
 
 
 --------------------------------------------------------------------------------

@@ -1,16 +1,13 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Pagure.Command where
 
-import qualified Paths_pagure_cli as Paths
-import Control.Lens hiding (argument)
-import Data.Aeson.Lens
-import Data.Maybe (fromMaybe)
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-import Data.Version (showVersion)
 import Options.Applicative
 import Web.Pagure hiding (User)
+
+import Pagure.Command.GitTags
+import Pagure.Command.Tags
+import Pagure.Command.User
+import Pagure.Command.Users
+import Pagure.Command.Version
 
 -- | Every command has a constructor in this type. It can have an optional field
 -- which should contain the command-line options specific to that command.
@@ -68,9 +65,6 @@ globalOptions cmd = GlobalOptions
 -- Command: git-tags
 --------------------------------------------------------------------------------
 
-data GitTagsOptions =
-  GitTagsOptions { gitTagsOptionsRepo :: String } deriving (Eq, Ord, Show)
-
 gitTagsCommandParser :: Parser Command
 gitTagsCommandParser = GitTags <$> (GitTagsOptions <$> argument str (
                                                          metavar "REPOSITORY"
@@ -82,21 +76,10 @@ gitTagsCommand =
                       fullDesc
                       <> progDesc "Displays the git tags for the given repository")
 
-gitTagsCommandRunner :: GitTagsOptions -> IO ()
-gitTagsCommandRunner (GitTagsOptions repo) = do
-  -- TODO: Handle PagureConfig coming from CLI args and/or config file
-  let pc = PagureConfig "https://pagure.io" Nothing
-  gitTagsResp <- runPagureT (gitTags repo) pc
-  mapM_ T.putStrLn gitTagsResp
-
 
 --------------------------------------------------------------------------------
 -- Command: tags
 --------------------------------------------------------------------------------
-
-data TagsOptions =
-  TagsOptions { tagsOptionsRepo :: String
-              , tagsOptionsPattern :: Maybe String } deriving (Eq, Ord, Show)
 
 tagsCommandParser :: Parser Command
 tagsCommandParser = Tags <$> (TagsOptions <$> argument str (
@@ -114,19 +97,10 @@ tagsCommand =
                   fullDesc
                   <>  progDesc "Displays the tags for the given repository")
 
-tagsCommandRunner :: TagsOptions -> IO ()
-tagsCommandRunner (TagsOptions repo pattern) = do
-  let pc = PagureConfig "https://pagure.io" Nothing
-  pagureTags <- runPagureT (tags repo (fmap T.pack pattern)) pc
-  mapM_ T.putStrLn pagureTags
-
 
 --------------------------------------------------------------------------------
 -- Command: user
 --------------------------------------------------------------------------------
-
-data UserOptions =
-  UserOptions { userOptionsUsername :: String } deriving (Eq, Ord, Show)
 
 userCommandParser :: Parser Command
 userCommandParser = User <$> (UserOptions <$> argument str (
@@ -139,20 +113,10 @@ userCommand =
                    fullDesc
                    <>  progDesc "Show information about a pagure user")
 
-userCommandRunner :: UserOptions -> IO ()
-userCommandRunner (UserOptions username) = do
-  let pc = PagureConfig "https://pagure.io" Nothing
-  pagureUser <- runPagureT (user (T.pack username)) pc
-  -- TODO: This output is very ugly
-  putStrLn (show pagureUser)
-
 
 --------------------------------------------------------------------------------
 -- Command: users
 --------------------------------------------------------------------------------
-
-data UsersOptions =
-  UsersOptions { usersOptionsPattern :: Maybe String } deriving (Eq, Ord, Show)
 
 usersCommandParser :: Parser Command
 usersCommandParser = Users <$> (UsersOptions <$> optional (strOption (
@@ -167,12 +131,6 @@ usersCommand =
                    fullDesc
                    <>  progDesc "Retieve a list of pagure users")
 
-usersCommandRunner :: UsersOptions -> IO ()
-usersCommandRunner (UsersOptions pattern) = do
-  let pc = PagureConfig "https://pagure.io" Nothing
-  pagureUsers <- runPagureT (users (fmap T.pack pattern)) pc
-  mapM_ T.putStrLn pagureUsers
-
 
 --------------------------------------------------------------------------------
 -- Command: version
@@ -186,13 +144,3 @@ versionCommand =
   command "version" (info (helper <*> globalOptions versionCommandParser) $
                      fullDesc
                      <>  progDesc "Displays the version of pagure-cli and the pagure.io API")
-
-versionCommandRunner :: IO ()
-versionCommandRunner = do
-  -- TODO: Handle PagureConfig coming from CLI args and/or config file
-  let pc = PagureConfig "https://pagure.io" Nothing
-  pagureVersion <- runPagureT version pc
-  putStrLn ("pagure-cli " ++ showVersion Paths.version)
-  T.putStrLn ("pagure API "
-              <> (fromMaybe "N/A" (pagureVersion ^? key "version" . _String))
-              <> " (" <> "https://pagure.io" <> ")")

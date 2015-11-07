@@ -20,11 +20,14 @@ executable pagure
   build-depends:       base >= 4 && < 5
                      , aeson >= 0.7 && < 1
                      , bytestring >= 0.9 && < 1
+                     , data-default >= 0.4 && < 1
                      , lens >= 4 && < 5
                      , lens-aeson >= 1 && < 2
                      , text >= 1 && < 2
+                     , transformers >= 0.3 && < 0.5
                      , pagure
                      , optparse-applicative >= 0.8 && < 1
+                     , shelly >= 1 && < 2
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall -threaded -O2

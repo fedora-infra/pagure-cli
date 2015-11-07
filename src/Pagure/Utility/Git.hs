@@ -17,10 +17,8 @@ getPagureGitConfig key = do
          S.errExit False $
          S.run "git" ["config", "pagure." <> key]
   ec <- lift $ S.lastExitCode
-  -- TODO: Why doesn't `guard (ec == 0)` cause us to stop before the return?
-  if ec == 0 && not (T.null res)
-    then return (init . T.unpack $ res)
-    else mzero
+  guard (ec == 0 && not (T.null res))
+  return (init . T.unpack $ res)
 
 pagureConfigFromGit :: MaybeT S.Sh PagureConfig
 pagureConfigFromGit = do

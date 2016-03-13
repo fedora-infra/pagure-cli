@@ -4,6 +4,7 @@ import Options.Applicative
 import Web.Pagure hiding (User)
 
 import Pagure.Command.GitTags
+import Pagure.Command.Issue
 import Pagure.Command.Issues
 import Pagure.Command.Tags
 import Pagure.Command.User
@@ -14,6 +15,7 @@ import Pagure.Command.Version
 -- which should contain the command-line options specific to that command.
 data Command =
     GitTags GitTagsOptions
+  | IssueCmd IssueOptions
   | Issues IssuesOptions
   | Tags TagsOptions
   | User UserOptions
@@ -26,6 +28,7 @@ data Command =
 options :: Parser GlobalOptions
 options = subparser $
           gitTagsCommand
+       <> issueCommand
        <> issuesCommand
        <> tagsCommand
        <> userCommand
@@ -39,12 +42,13 @@ options = subparser $
 runPagureCli :: GlobalOptions -> IO ()
 runPagureCli g@(GlobalOptions cmd verbose) =
   case cmd of
-    GitTags opts -> gitTagsCommandRunner opts
-    Issues opts  -> issuesCommandRunner opts
-    Tags opts    -> tagsCommandRunner opts
-    User opts    -> userCommandRunner opts
-    Users opts   -> usersCommandRunner opts
-    Version      -> versionCommandRunner
+    GitTags opts  -> gitTagsCommandRunner opts
+    IssueCmd opts -> issueCommandRunner opts
+    Issues opts   -> issuesCommandRunner opts
+    Tags opts     -> tagsCommandRunner opts
+    User opts     -> userCommandRunner opts
+    Users opts    -> usersCommandRunner opts
+    Version       -> versionCommandRunner
 
 
 --------------------------------------------------------------------------------
@@ -79,6 +83,26 @@ gitTagsCommand =
   command "git-tags" (info (helper <*> globalOptions gitTagsCommandParser) $
                       fullDesc
                    <> progDesc "Displays the git tags for the given repository")
+
+--------------------------------------------------------------------------------
+-- Command: issue
+--------------------------------------------------------------------------------
+
+issueCommandParser :: Parser Command
+issueCommandParser = IssueCmd <$> (IssueOptions <$> argument str (
+                                                      metavar "REPOSITORY"
+                                                   <> help "Repository containing the issue")
+                                                <*> idNum)
+  where
+    idNum :: Parser Integer
+    idNum = argument auto (metavar "ISSUE_NUMBER"
+                       <> help "The ID number of the issue")
+
+issueCommand :: Mod CommandFields GlobalOptions
+issueCommand =
+  command "issue" (info (helper <*> globalOptions issueCommandParser) $
+                      fullDesc
+                   <> progDesc "Displays information about a particular issue")
 
 
 --------------------------------------------------------------------------------

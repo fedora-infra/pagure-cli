@@ -4,6 +4,7 @@ import Options.Applicative
 import Web.Pagure hiding (User)
 
 import Pagure.Command.GitTags
+import Pagure.Command.Issues
 import Pagure.Command.Tags
 import Pagure.Command.User
 import Pagure.Command.Users
@@ -13,6 +14,7 @@ import Pagure.Command.Version
 -- which should contain the command-line options specific to that command.
 data Command =
     GitTags GitTagsOptions
+  | Issues IssuesOptions
   | Tags TagsOptions
   | User UserOptions
   | Users UsersOptions
@@ -24,6 +26,7 @@ data Command =
 options :: Parser GlobalOptions
 options = subparser $
           gitTagsCommand
+       <> issuesCommand
        <> tagsCommand
        <> userCommand
        <> usersCommand
@@ -37,6 +40,7 @@ runPagureCli :: GlobalOptions -> IO ()
 runPagureCli g@(GlobalOptions cmd verbose) =
   case cmd of
     GitTags opts -> gitTagsCommandRunner opts
+    Issues opts  -> issuesCommandRunner opts
     Tags opts    -> tagsCommandRunner opts
     User opts    -> userCommandRunner opts
     Users opts   -> usersCommandRunner opts
@@ -74,7 +78,43 @@ gitTagsCommand :: Mod CommandFields GlobalOptions
 gitTagsCommand =
   command "git-tags" (info (helper <*> globalOptions gitTagsCommandParser) $
                       fullDesc
-                      <> progDesc "Displays the git tags for the given repository")
+                   <> progDesc "Displays the git tags for the given repository")
+
+
+--------------------------------------------------------------------------------
+-- Command: issues
+--------------------------------------------------------------------------------
+
+issuesCommandParser :: Parser Command
+issuesCommandParser = Issues <$> (IssuesOptions <$> argument str (
+                                                      metavar "REPOSITORY"
+                                                   <> help "Repository to query for issues")
+                                                <*> optional (strOption (
+                                                      long "status"
+                                                   <> short 's'
+                                                   <> metavar "STATUS"
+                                                   <> help "Filter by issue status"))
+                                                <*> optional (strOption (  -- TODO: List
+                                                      long "tags"
+                                                   <> short 't'
+                                                   <> metavar "TAGS"
+                                                   <> help "Filter by issue tags"))
+                                                <*> optional (strOption (
+                                                      long "assignee"
+                                                   <> short 'A'
+                                                   <> metavar "ASSIGNEE"
+                                                   <> help "Filter by assignee"))
+                                                <*> optional (strOption (
+                                                      long "author"
+                                                   <> short 'a'
+                                                   <> metavar "AUTHOR"
+                                                   <> help "Filter by author")))
+
+issuesCommand :: Mod CommandFields GlobalOptions
+issuesCommand =
+  command "issues" (info (helper <*> globalOptions issuesCommandParser) $
+                    fullDesc
+                 <> progDesc "List issues for a given repository")
 
 
 --------------------------------------------------------------------------------
@@ -95,7 +135,7 @@ tagsCommand :: Mod CommandFields GlobalOptions
 tagsCommand =
   command "tags" (info (helper <*> globalOptions tagsCommandParser) $
                   fullDesc
-                  <>  progDesc "Displays the tags for the given repository")
+               <> progDesc "Displays the tags for the given repository")
 
 
 --------------------------------------------------------------------------------
@@ -111,7 +151,7 @@ userCommand :: Mod CommandFields GlobalOptions
 userCommand =
   command "user" (info (helper <*> globalOptions userCommandParser) $
                    fullDesc
-                   <>  progDesc "Show information about a pagure user")
+                <> progDesc "Show information about a pagure user")
 
 
 --------------------------------------------------------------------------------
@@ -129,7 +169,7 @@ usersCommand :: Mod CommandFields GlobalOptions
 usersCommand =
   command "users" (info (helper <*> globalOptions usersCommandParser) $
                    fullDesc
-                   <>  progDesc "Retieve a list of pagure users")
+                <> progDesc "Retieve a list of pagure users")
 
 
 --------------------------------------------------------------------------------
@@ -143,4 +183,4 @@ versionCommand :: Mod CommandFields GlobalOptions
 versionCommand =
   command "version" (info (helper <*> globalOptions versionCommandParser) $
                      fullDesc
-                     <>  progDesc "Displays the version of pagure-cli and the pagure.io API")
+                  <> progDesc "Displays the version of pagure-cli and the pagure.io API")

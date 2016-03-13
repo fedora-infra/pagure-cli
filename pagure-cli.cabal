@@ -19,6 +19,8 @@ executable pagure
   -- other-extensions:
   build-depends:       base >= 4 && < 5
                      , aeson >= 0.7 && < 1
+                     , ansi-terminal >= 0.6 && < 0.7
+                     , boxes >= 0.1.4 && < 1
                      , bytestring >= 0.9 && < 1
                      , data-default >= 0.4 && < 1
                      , lens >= 4 && < 5
